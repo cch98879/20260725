@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>彰化社區大學隨機抽獎系統</title>
+
+<style>
+
+*{
+box-sizing:border-box;
+}
+
+body{
+margin:0;
+font-family:"Microsoft JhengHei",sans-serif;
+background:linear-gradient(135deg,#031321,#071b38,#02111f);
+color:white;
+text-align:center;
+min-height:100vh;
+padding:20px;
+overflow-x:hidden;
+}
+
+h1{
+font-size:clamp(22px,4vw,38px);
+color:#00ffff;
+text-shadow:0 0 20px cyan;
+margin-bottom:10px;
+}
+
+h2{
+font-size:clamp(18px,3vw,28px);
+color:#ffd700;
+text-shadow:0 0 15px gold;
+margin-top:0;
+}
+
+.control{
+margin:20px auto;
+display:flex;
+flex-wrap:wrap;
+justify-content:center;
+gap:15px;
+}
+
+.control label{
+font-size:18px;
+}
+
+input{
+width:90px;
+padding:8px;
+font-size:18px;
+border-radius:8px;
+border:none;
+text-align:center;
+}
+
+button{
+padding:12px 25px;
+font-size:18px;
+border:none;
+border-radius:12px;
+cursor:pointer;
+background:#00c8ff;
+color:white;
+font-weight:bold;
+box-shadow:0 0 15px #00ffff;
+transition:0.3s;
+}
+
+button:hover{
+transform:scale(1.05);
+}
+
+button:disabled{
+background:gray;
+box-shadow:none;
+cursor:not-allowed;
+}
+
+#countdown{
+font-size:38px;
+color:#00ff99;
+margin-top:15px;
+font-weight:bold;
+text-shadow:0 0 15px #00ff99;
+}
+
+#winner{
+font-size:55px;
+font-weight:bold;
+margin-top:20px;
+color:#ffea00;
+text-shadow:
+0 0 10px yellow,
+0 0 20px orange,
+0 0 40px red;
+display:none;
+animation:zoom 1s infinite alternate;
+}
+
+@keyframes zoom{
+from{transform:scale(1);}
+to{transform:scale(1.15);}
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(10,1fr);
+gap:10px;
+max-width:900px;
+margin:30px auto;
+}
+
+.cell{
+background:#15253f;
+border:2px solid #00ffff;
+border-radius:12px;
+padding:18px;
+font-size:clamp(18px,2vw,26px);
+font-weight:bold;
+box-shadow:0 0 8px cyan;
+transition:0.1s;
+}
+
+.active{
+background:#00ffff;
+color:black;
+transform:scale(1.1);
+box-shadow:0 0 25px white;
+}
+
+.win{
+background:#ffea00;
+color:black;
+box-shadow:0 0 35px gold;
+}
+
+@media(max-width:768px){
+
+.grid{
+grid-template-columns:repeat(5,1fr);
+}
+
+}
+
+canvas{
+position:fixed;
+left:0;
+top:0;
+pointer-events:none;
+z-index:999;
+}
+
+</style>
+</head>
+<body>
+
+<h1>
+彰化社區大學-讓AI解決我的生活大小事成果展
+</h1>
+
+<h2>
+隨機抽獎系統-學員：曾玉美設計
+</h2>
+
+<div class="control">
+
+<label>
+抽獎儲存格數量
+<br>
+<input type="number" id="qty" value="20" min="1">
+</label>
+
+<label>
+倒數秒數
+<br>
+<input type="number" id="seconds" value="5" min="1">
+</label>
+
+</div>
+
+<div class="control">
+
+<button onclick="createGrid()">
+設定
+</button>
+
+<button id="startBtn" onclick="startLottery()">
+開始抽獎
+</button>
+
+</div>
+
+<div id="countdown"></div>
+<div id="winner"></div>
+
+<div id="grid" class="grid"></div>
+
+<canvas id="canvas"></canvas>
+
+<script>
+
+const grid=document.getElementById("grid");
+const countdown=document.getElementById("countdown");
+const winner=document.getElementById("winner");
+const startBtn=document.getElementById("startBtn");
+
+let timer=null;
+let current=-1;
+
+createGrid();
+
+function createGrid(){
+
+grid.innerHTML="";
+winner.style.display="none";
+countdown.innerHTML="";
+
+let qty=parseInt(document.getElementById("qty").value);
+
+for(let i=1;i<=qty;i++){
+
+let div=document.createElement("div");
+div.className="cell";
+div.innerText=i;
+grid.appendChild(div);
+
+}
+
+}
+
+
+function startLottery(){
+
+if(timer) return;
+
+winner.style.display="none";
+
+let total=parseInt(
+document.getElementById("qty").value
+);
+
+let seconds=parseFloat(
+document.getElementById("seconds").value
+);
+
+if(total<1)return;
+
+let remain=Math.round(seconds*10);
+
+const cells=document.querySelectorAll(".cell");
+
+startBtn.disabled=true;
+
+timer=setInterval(()=>{
+
+remain--;
+
+if(remain<0){
+remain=0;
+}
+
+let show=(remain/10).toFixed(1);
+
+countdown.innerHTML=
+"倒數：" + show + " 秒";
+
+cells.forEach(c=>c.classList.remove("active"));
+
+current=Math.floor(Math.random()*total);
+
+cells[current].classList.add("active");
+
+
+if(remain<=0){
+
+clearInterval(timer);
+timer=null;
+
+cells.forEach(c=>c.classList.remove("active"));
+cells[current].classList.add("win");
+
+winner.style.display="block";
+winner.innerHTML=
+"🎉 最終中獎號碼：" + (current+1);
+
+countdown.innerHTML="抽獎完成！";
+
+launchConfetti();
+
+startBtn.disabled=false;
+
+}
+
+},100);
+
+}
+
+
+/* 彩帶動畫 */
+
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+
+function resizeCanvas(){
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+}
+
+resizeCanvas();
+window.addEventListener("resize",resizeCanvas);
+
+function launchConfetti(){
+
+let confetti=[];
+
+for(let i=0;i<200;i++){
+
+confetti.push({
+
+x:Math.random()*canvas.width,
+y:-20,
+r:Math.random()*8+4,
+dx:(Math.random()-0.5)*8,
+dy:Math.random()*5+2,
+color:`hsl(${Math.random()*360},100%,50%)`
+
+});
+
+}
+
+let frame=0;
+
+function animate(){
+
+ctx.clearRect(0,0,
+canvas.width,canvas.height);
+
+confetti.forEach(c=>{
+
+ctx.fillStyle=c.color;
+ctx.fillRect(c.x,c.y,c.r,c.r);
+
+c.x+=c.dx;
+c.y+=c.dy;
+
+});
+
+frame++;
+
+if(frame<220){
+
+requestAnimationFrame(animate);
+
+}else{
+
+ctx.clearRect(0,0,
+canvas.width,canvas.height);
+
+}
+
+}
+
+animate();
+
+}
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>彰化社區大學 AI成果展 抽獎系統</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:"Microsoft JhengHei",sans-serif;
+}
+
+body{
+
+background:linear-gradient(135deg,#07152e,#081b44,#0a2d5f,#103f73);
+
+min-height:100vh;
+
+color:white;
+
+text-align:center;
+
+padding:20px;
+
+overflow-x:hidden;
+
+}
+
+h1{
+font-size:clamp(22px,3vw,38px);
+color:#00ffff;
+text-shadow:0 0 15px cyan;
+margin-bottom:8px;
+}
+
+h2{
+font-size:clamp(18px,2vw,28px);
+color:#ffd700;
+margin-bottom:25px;
+}
+
+.control{
+
+display:flex;
+flex-wrap:wrap;
+justify-content:center;
+gap:12px;
+margin-bottom:20px;
+
+}
+
+input{
+
+width:120px;
+
+padding:10px;
+
+border:none;
+
+border-radius:8px;
+
+text-align:center;
+
+font-size:18px;
+
+}
+
+button{
+
+padding:10px 24px;
+
+font-size:18px;
+
+border:none;
+
+border-radius:8px;
+
+cursor:pointer;
+
+background:#00bfff;
+
+color:white;
+
+font-weight:bold;
+
+transition:.3s;
+
+}
+
+button:hover{
+
+background:#00ffff;
+
+transform:scale(1.05);
+
+box-shadow:0 0 15px cyan;
+
+}
+
+#countdown{
+
+font-size:38px;
+
+color:#00ff66;
+
+margin:15px;
+
+font-weight:bold;
+
+text-shadow:0 0 10px #00ff66;
+
+}
+
+.grid{
+
+display:grid;
+
+grid-template-columns:repeat(10,1fr);
+
+gap:10px;
+
+max-width:900px;
+
+margin:auto;
+
+}
+
+.cell{
+
+aspect-ratio:1;
+
+background:#0f3f74;
+
+border:2px solid #00ffff;
+
+display:flex;
+
+align-items:center;
+
+justify-content:center;
+
+font-size:26px;
+
+font-weight:bold;
+
+border-radius:10px;
+
+transition:.1s;
+
+box-shadow:0 0 8px rgba(0,255,255,.4);
+
+}
+
+.active{
+
+background:#ffd700;
+
+color:#000;
+
+transform:scale(1.15);
+
+box-shadow:0 0 25px yellow;
+
+}
+
+#winner{
+
+margin-top:35px;
+
+font-size:clamp(28px,5vw,60px);
+
+font-weight:bold;
+
+color:#ffeb3b;
+
+text-shadow:0 0 20px gold;
+
+display:none;
+
+animation:zoom .8s infinite alternate;
+
+}
+
+@keyframes zoom{
+
+from{transform:scale(1);}
+to{transform:scale(1.15);}
+
+}
+
+.confetti{
+
+position:fixed;
+
+top:-20px;
+
+width:12px;
+
+height:18px;
+
+opacity:.9;
+
+animation:fall linear forwards;
+
+}
+
+@keyframes fall{
+
+to{
+
+transform:translateY(120vh) rotate(720deg);
+
+}
+
+}
+
+@media(max-width:768px){
+
+.grid{
+
+grid-template-columns:repeat(5,1fr);
+
+}
+
+.cell{
+
+font-size:20px;
+
+}
+
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>彰化社區大學－讓AI解決我的生活大小事成果展</h1>
+
+<h2>🎉 隨機抽獎系統－學員：王麗珠設計 🎉</h2>
+
+<div class="control">
+
+<label>
+抽獎儲存格數量
+<input id="num" type="number" value="20" min="1">
+</label>
+
+<label>
+倒數秒數
+<input id="sec" type="number" value="5" min="1" step="0.1">
+</label>
+
+<button onclick="createGrid()">設定</button>
+
+<button onclick="startLottery()">開始抽獎</button>
+
+</div>
+
+<div id="countdown"></div>
+
+<div id="grid" class="grid"></div>
+
+<div id="winner"></div>
+
+<script>
+
+const grid=document.getElementById("grid");
+
+const winner=document.getElementById("winner");
+
+const countdown=document.getElementById("countdown");
+
+let cells=[];
+
+function createGrid(){
+
+grid.innerHTML="";
+
+winner.style.display="none";
+
+cells=[];
+
+let n=parseInt(document.getElementById("num").value)||20;
+
+for(let i=1;i<=n;i++){
+
+let d=document.createElement("div");
+
+d.className="cell";
+
+d.innerHTML=i;
+
+grid.appendChild(d);
+
+cells.push(d);
+
+}
+
+}
+
+createGrid();
+
+function startLottery(){
+
+winner.style.display="none";
+
+let total=parseFloat(document.getElementById("sec").value)||5;
+
+let remain=total;
+
+let last=0;
+
+countdown.innerHTML=remain.toFixed(1)+" 秒";
+
+let timer=setInterval(()=>{
+
+cells.forEach(c=>c.classList.remove("active"));
+
+last=Math.floor(Math.random()*cells.length);
+
+cells[last].classList.add("active");
+
+remain-=0.1;
+
+if(remain<0)remain=0;
+
+countdown.innerHTML=remain.toFixed(1)+" 秒";
+
+if(remain<=0){
+
+clearInterval(timer);
+
+winner.style.display="block";
+
+winner.innerHTML="🏆 最終中獎號碼：<br><span style='font-size:90px'>"+(last+1)+"</span>";
+
+confetti();
+
+}
+
+},100);
+
+}
+
+function confetti(){
+
+const colors=["#ff0","#0ff","#0f0","#f0f","#ff5722","#fff","#ff1493"];
+
+for(let i=0;i<180;i++){
+
+let c=document.createElement("div");
+
+c.className="confetti";
+
+c.style.left=Math.random()*100+"vw";
+
+c.style.background=colors[Math.floor(Math.random()*colors.length)];
+
+c.style.animationDuration=(Math.random()*3+2)+"s";
+
+c.style.transform="rotate("+Math.random()*360+"deg)";
+
+document.body.appendChild(c);
+
+setTimeout(()=>c.remove(),6000);
+
+}
+
+}
+
+</script>
+
+</body>
+</html>

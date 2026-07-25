@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>隨機抽獎系統</title>
+    <!-- Canvas-Confetti 彩帶特效庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(20, 30, 55, 0.7);
+            --primary-neon: #00f0ff;
+            --secondary-neon: #7000ff;
+            --accent-pink: #ff007f;
+            --text-color: #e2e8f0;
+            --cell-bg: rgba(15, 23, 42, 0.8);
+            --cell-border: rgba(0, 240, 255, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 10px;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(112, 0, 255, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(0, 240, 255, 0.15) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            width: 100%;
+        }
+
+        .title-line1 {
+            font-size: clamp(1.4rem, 4vw, 2.2rem);
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 0 0 10px var(--primary-neon), 0 0 20px var(--primary-neon);
+            margin-bottom: 8px;
+            letter-spacing: 1.5px;
+        }
+
+        .title-line2 {
+            font-size: clamp(1rem, 2.5vw, 1.4rem);
+            color: var(--primary-neon);
+            letter-spacing: 1px;
+            opacity: 0.9;
+        }
+
+        .control-panel {
+            background: var(--card-bg);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            backdrop-filter: blur(8px);
+            border-radius: 12px;
+            padding: 20px;
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group label {
+            font-size: 0.95rem;
+            color: #94a3b8;
+        }
+
+        .input-group input {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--cell-border);
+            color: var(--primary-neon);
+            padding: 8px 12px;
+            border-radius: 6px;
+            width: 80px;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: bold;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary-neon);
+            box-shadow: 0 0 8px var(--primary-neon);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--secondary-neon), var(--primary-neon));
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px var(--primary-neon);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, var(--accent-pink), var(--secondary-neon));
+            box-shadow: 0 0 10px rgba(255, 0, 127, 0.3);
+        }
+
+        .btn-start:hover:not(:disabled) {
+            box-shadow: 0 0 20px var(--accent-pink);
+        }
+
+        .status-display {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .timer-val {
+            color: var(--accent-pink);
+            font-size: 2rem;
+            font-family: monospace;
+            text-shadow: 0 0 10px var(--accent-pink);
+        }
+
+        .grid-container {
+            width: 100%;
+            max-width: 1000px;
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .cell {
+            background: var(--cell-bg);
+            border: 1px solid var(--cell-border);
+            border-radius: 8px;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #64748b;
+            transition: all 0.1s ease;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        .cell.active {
+            background: var(--primary-neon);
+            color: #000;
+            border-color: #fff;
+            box-shadow: 0 0 20px var(--primary-neon), inset 0 0 10px #fff;
+            transform: scale(1.08);
+            z-index: 2;
+        }
+
+        .cell.winner {
+            background: var(--accent-pink);
+            color: #fff;
+            border-color: #fff;
+            box-shadow: 0 0 30px var(--accent-pink), 0 0 50px var(--accent-pink);
+            font-size: 2rem;
+            transform: scale(1.15);
+            z-index: 3;
+            animation: pulse 0.8s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1.15); box-shadow: 0 0 20px var(--accent-pink); }
+            100% { transform: scale(1.25); box-shadow: 0 0 40px var(--accent-pink), 0 0 60px var(--accent-pink); }
+        }
+
+        /* 響應式調整 */
+        @media (max-width: 768px) {
+            .grid-container {
+                gap: 6px;
+            }
+            .cell {
+                font-size: 0.9rem;
+                border-radius: 4px;
+            }
+            .control-panel {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .input-group {
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 標題區域 -->
+    <div class="header">
+        <div class="title-line1">彰化社區大學-讓AI解決我的生活大小事成果展</div>
+        <div class="title-line2">隨機抽獎系統-學員：黃鳳庭設計</div>
+    </div>
+
+    <!-- 控制面板 -->
+    <div class="control-panel">
+        <div class="input-group">
+            <label for="cellCount">抽獎儲存格數量：</label>
+            <input type="number" id="cellCount" value="20" min="1" max="100">
+        </div>
+        <div class="input-group">
+            <label for="countdownSec">倒數秒數：</label>
+            <input type="number" id="countdownSec" value="5" min="1" step="0.5">
+        </div>
+        <button class="btn" id="btnSetup" onclick="setupGrid()">設定</button>
+        <button class="btn btn-start" id="btnStart" onclick="startLottery()">開始抽獎</button>
+    </div>
+
+    <!-- 狀態與倒數顯示 -->
+    <div class="status-display" id="statusDisplay">
+        請點擊「設定」或「開始抽獎」
+    </div>
+
+    <!-- 抽獎表格網格 -->
+    <div class="grid-container" id="gridContainer"></div>
+
+    <script>
+        let totalCells = 20;
+        let timerInterval = null;
+        let highlightInterval = null;
+        let currentHighlightIndex = -1;
+
+        // 頁面載入時自動建立預設表格
+        window.onload = function() {
+            setupGrid();
+        };
+
+        // 設定並產生儲存格網格
+        function setupGrid() {
+            const countInput = document.getElementById('cellCount').value;
+            totalCells = parseInt(countInput) || 20;
+
+            if (totalCells <= 0) {
+                alert('儲存格數量必須大於 0！');
+                return;
+            }
+
+            const container = document.getElementById('gridContainer');
+            container.innerHTML = ''; // 清空舊內容
+
+            for (let i = 1; i <= totalCells; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.id = `cell-${i}`;
+                cell.innerText = i;
+                container.appendChild(cell);
+            }
+
+            document.getElementById('statusDisplay').innerHTML = `已準備完成，共 ${totalCells} 個抽獎號碼`;
+        }
+
+        // 開始抽獎邏輯
+        function startLottery() {
+            const secInput = parseFloat(document.getElementById('countdownSec').value);
+            let remainingTime = isNaN(secInput) || secInput <= 0 ? 5.0 : secInput;
+
+            // 確保網格存在
+            const container = document.getElementById('gridContainer');
+            if (container.children.length === 0) {
+                setupGrid();
+            }
+
+            // 清除之前的狀態
+            clearAllHighlights();
+            toggleInputs(false);
+
+            const statusDisplay = document.getElementById('statusDisplay');
+            statusDisplay.innerHTML = `倒數計時：<span class="timer-val" id="timer">${remainingTime.toFixed(1)}</span> 秒`;
+
+            // 1. 每 0.1 秒切換一次高亮儲存格
+            highlightInterval = setInterval(() => {
+                clearCurrentHighlight();
+                // 隨機選取一個儲存格 (1 ~ totalCells)
+                currentHighlightIndex = Math.floor(Math.random() * totalCells) + 1;
+                const targetCell = document.getElementById(`cell-${currentHighlightIndex}`);
+                if (targetCell) {
+                    targetCell.classList.add('active');
+                }
+            }, 100);
+
+            // 2. 倒數計時器 (每 0.1 秒更新一次)
+            timerInterval = setInterval(() => {
+                remainingTime -= 0.1;
+
+                if (remainingTime <= 0) {
+                    remainingTime = 0.0;
+                    finishLottery();
+                }
+
+                const timerEl = document.getElementById('timer');
+                if (timerEl) {
+                    timerEl.innerText = remainingTime.toFixed(1);
+                }
+            }, 100);
+        }
+
+        // 抽獎結束處理
+        function finishLottery() {
+            clearInterval(timerInterval);
+            clearInterval(highlightInterval);
+
+            clearCurrentHighlight();
+
+            // 隨機產生最終中獎號碼
+            const winningNumber = Math.floor(Math.random() * totalCells) + 1;
+            const winningCell = document.getElementById(`cell-${winningNumber}`);
+
+            if (winningCell) {
+                winningCell.classList.add('winner');
+            }
+
+            // 顯示最終中獎結果
+            const statusDisplay = document.getElementById('statusDisplay');
+            statusDisplay.innerHTML = `🎉 最終中獎號碼：<span class="timer-val" style="font-size: 2.5rem; color: var(--primary-neon);">${winningNumber}</span> 號 🎉`;
+
+            // 發射彩帶特效
+            triggerConfetti();
+
+            // 重新啟用按鈕
+            toggleInputs(true);
+        }
+
+        // 清除當前的高亮
+        function clearCurrentHighlight() {
+            if (currentHighlightIndex !== -1) {
+                const prevCell = document.getElementById(`cell-${currentHighlightIndex}`);
+                if (prevCell) {
+                    prevCell.classList.remove('active');
+                }
+            }
+        }
+
+        // 清除所有狀態（包含中獎樣式）
+        function clearAllHighlights() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                cell.classList.remove('active', 'winner');
+            });
+        }
+
+        // 鎖定/啟用 輸入欄位與按鈕
+        function toggleInputs(enabled) {
+            document.getElementById('btnSetup').disabled = !enabled;
+            document.getElementById('btnStart').disabled = !enabled;
+            document.getElementById('cellCount').disabled = !enabled;
+            document.getElementById('countdownSec').disabled = !enabled;
+        }
+
+        // 彩帶動畫函數 (使用 Canvas-Confetti 庫)
+        function triggerConfetti() {
+            const duration = 3 * 1000;
+            const animationEnd = Date.now() + duration;
+            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 999 };
+
+            function randomInRange(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            const interval = setInterval(function() {
+                const timeLeft = animationEnd - Date.now();
+
+                if (timeLeft <= 0) {
+                    return clearInterval(interval);
+                }
+
+                const particleCount = 50 * (timeLeft / duration);
+                
+                // 從畫面左右兩側發射彩帶
+                confetti(Object.assign({}, defaults, { 
+                    particleCount, 
+                    origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } 
+                }));
+                confetti(Object.assign({}, defaults, { 
+                    particleCount, 
+                    origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } 
+                }));
+            }, 250);
+        }
+    </script>
+</body>
+</html>

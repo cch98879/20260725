@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>隨機抽獎系統</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+        color: #ffffff;
+        background:
+            radial-gradient(circle at top left, #123c66 0%, transparent 35%),
+            radial-gradient(circle at bottom right, #3b145e 0%, transparent 35%),
+            linear-gradient(135deg, #050b18, #0b1630 50%, #120b27);
+        overflow-x: hidden;
+    }
+
+    body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+            linear-gradient(rgba(0, 210, 255, 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 210, 255, 0.05) 1px, transparent 1px);
+        background-size: 40px 40px;
+        z-index: 0;
+    }
+
+    .container {
+        position: relative;
+        z-index: 1;
+        width: min(1200px, 94%);
+        margin: auto;
+        padding: 25px 0 40px;
+        text-align: center;
+    }
+
+    .title1 {
+        font-size: clamp(1.3rem, 3vw, 2.3rem);
+        font-weight: bold;
+        letter-spacing: 2px;
+        color: #62eaff;
+        text-shadow:
+            0 0 8px #00d9ff,
+            0 0 20px #008cff;
+        margin-bottom: 12px;
+    }
+
+    .title2 {
+        font-size: clamp(1.1rem, 2.5vw, 1.8rem);
+        color: #ffffff;
+        text-shadow: 0 0 12px #9d7cff;
+        margin-bottom: 25px;
+    }
+
+    .control-panel {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        padding: 18px;
+        margin-bottom: 25px;
+        border: 1px solid rgba(0, 220, 255, 0.5);
+        border-radius: 18px;
+        background: rgba(7, 22, 45, 0.75);
+        box-shadow:
+            0 0 20px rgba(0, 200, 255, 0.2),
+            inset 0 0 20px rgba(0, 200, 255, 0.05);
+        backdrop-filter: blur(10px);
+    }
+
+    label {
+        font-size: 1rem;
+        color: #bcefff;
+    }
+
+    input {
+        width: 100px;
+        padding: 10px;
+        font-size: 1rem;
+        text-align: center;
+        color: #ffffff;
+        background: #07152c;
+        border: 1px solid #20d9ff;
+        border-radius: 8px;
+        outline: none;
+    }
+
+    input:focus {
+        box-shadow: 0 0 12px #00d9ff;
+    }
+
+    button {
+        padding: 11px 22px;
+        font-size: 1rem;
+        font-weight: bold;
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: 0.25s;
+        background: linear-gradient(135deg, #0077ff, #9c27ff);
+        box-shadow: 0 0 12px rgba(0, 153, 255, 0.6);
+    }
+
+    button:hover {
+        transform: translateY(-2px) scale(1.03);
+        box-shadow: 0 0 22px rgba(0, 220, 255, 0.9);
+    }
+
+    button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .countdown {
+        min-height: 70px;
+        margin: 10px 0 20px;
+        font-size: clamp(2rem, 6vw, 4rem);
+        font-weight: bold;
+        color: #ffe600;
+        text-shadow:
+            0 0 10px #ffcc00,
+            0 0 30px #ff8800;
+    }
+
+    .lottery-grid {
+        display: grid;
+        grid-template-columns: repeat(10, minmax(50px, 1fr));
+        gap: 12px;
+        padding: 20px;
+        border: 1px solid rgba(0, 225, 255, 0.4);
+        border-radius: 20px;
+        background: rgba(4, 15, 32, 0.75);
+        box-shadow:
+            0 0 30px rgba(0, 200, 255, 0.18),
+            inset 0 0 25px rgba(0, 200, 255, 0.06);
+    }
+
+    .cell {
+        aspect-ratio: 1 / 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 55px;
+        font-size: clamp(1rem, 2.5vw, 1.5rem);
+        font-weight: bold;
+        color: #9eeeff;
+        border: 2px solid #168bb5;
+        border-radius: 12px;
+        background: linear-gradient(145deg, #0c2945, #071525);
+        box-shadow:
+            inset 0 0 12px rgba(0, 210, 255, 0.12),
+            0 0 8px rgba(0, 130, 255, 0.15);
+        transition: 0.1s;
+    }
+
+    .cell.active {
+        color: #ffffff;
+        border-color: #fff700;
+        background: linear-gradient(145deg, #ff8c00, #e600ff);
+        box-shadow:
+            0 0 12px #fff700,
+            0 0 30px #ff6600,
+            0 0 50px #ff00ff;
+        transform: scale(1.08);
+    }
+
+    .cell.winner {
+        color: #ffffff;
+        border-color: #ffffff;
+        background: linear-gradient(145deg, #ffcc00, #ff0080);
+        box-shadow:
+            0 0 20px #ffffff,
+            0 0 50px #ffcc00,
+            0 0 100px #ff0080;
+        transform: scale(1.2);
+        animation: winnerPulse 0.7s infinite alternate;
+    }
+
+    @keyframes winnerPulse {
+        from {
+            transform: scale(1.15);
+        }
+        to {
+            transform: scale(1.3);
+        }
+    }
+
+    .result {
+        margin-top: 30px;
+        min-height: 100px;
+    }
+
+    .result-title {
+        font-size: 1.4rem;
+        color: #bdefff;
+    }
+
+    .winner-number {
+        display: inline-block;
+        margin-top: 8px;
+        font-size: clamp(4rem, 13vw, 9rem);
+        font-weight: bold;
+        color: #fff700;
+        text-shadow:
+            0 0 10px #fff,
+            0 0 25px #ffcc00,
+            0 0 55px #ff6600,
+            0 0 90px #ff00cc;
+        animation: winnerGlow 1s infinite alternate;
+    }
+
+    @keyframes winnerGlow {
+        from {
+            filter: brightness(1);
+        }
+        to {
+            filter: brightness(1.6);
+        }
+    }
+
+    /* 煙火 */
+    .fireworks {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
+        z-index: 10;
+    }
+
+    .firework {
+        position: absolute;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        animation: explode 1.5s ease-out forwards;
+    }
+
+    @keyframes explode {
+        0% {
+            transform: translate(0, 0) scale(1);
+            opacity: 1;
+            box-shadow:
+                0 0 5px #fff,
+                0 0 10px #ff0;
+        }
+
+        100% {
+            transform:
+                translate(var(--x), var(--y))
+                scale(0.1);
+            opacity: 0;
+            box-shadow:
+                0 0 20px #fff,
+                0 0 40px #ff0;
+        }
+    }
+
+    @media (max-width: 700px) {
+        .container {
+            width: 96%;
+            padding-top: 18px;
+        }
+
+        .control-panel {
+            flex-direction: column;
+        }
+
+        .lottery-grid {
+            grid-template-columns: repeat(5, minmax(45px, 1fr));
+            gap: 8px;
+            padding: 12px;
+        }
+
+        .cell {
+            min-height: 45px;
+        }
+
+        button {
+            width: 85%;
+        }
+    }
+
+    @media (min-width: 701px) and (max-width: 950px) {
+        .lottery-grid {
+            grid-template-columns: repeat(10, minmax(40px, 1fr));
+            gap: 8px;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="title1">
+        彰化社區大學-讓AI解決我的生活大小事成果展
+    </div>
+
+    <div class="title2">
+        隨機抽獎系統-學員：林春幸設計
+    </div>
+
+    <div class="control-panel">
+
+        <label>
+            抽獎儲存格數量：
+            <input type="number" id="cellCount" value="20" min="1">
+        </label>
+
+        <label>
+            倒數秒數：
+            <input type="number" id="countdownSeconds" value="5" min="0.1" step="0.1">
+        </label>
+
+        <button id="setupBtn">⚙ 設定</button>
+        <button id="startBtn">🚀 開始抽獎</button>
+
+    </div>
+
+    <div class="countdown" id="countdown">
+        準備開始
+    </div>
+
+    <div class="lottery-grid" id="lotteryGrid"></div>
+
+    <div class="result" id="result"></div>
+
+</div>
+
+<div class="fireworks" id="fireworks"></div>
+
+<script>
+
+let cells = [];
+let timer = null;
+let currentIndex = -1;
+let isRunning = false;
+
+const cellCountInput = document.getElementById("cellCount");
+const countdownInput = document.getElementById("countdownSeconds");
+const setupBtn = document.getElementById("setupBtn");
+const startBtn = document.getElementById("startBtn");
+const lotteryGrid = document.getElementById("lotteryGrid");
+const countdownDisplay = document.getElementById("countdown");
+const result = document.getElementById("result");
+const fireworks = document.getElementById("fireworks");
+
+/* 建立抽獎儲存格 */
+function setupLottery() {
+
+    if (isRunning) return;
+
+    let count = parseInt(cellCountInput.value);
+
+    if (isNaN(count) || count < 1) {
+        count = 20;
+        cellCountInput.value = 20;
+    }
+
+    lotteryGrid.innerHTML = "";
+    result.innerHTML = "";
+    countdownDisplay.textContent = "準備開始";
+
+    cells = [];
+
+    for (let i = 1; i <= count; i++) {
+
+        const cell = document.createElement("div");
+
+        cell.className = "cell";
+        cell.textContent = i;
+
+        lotteryGrid.appendChild(cell);
+        cells.push(cell);
+    }
+}
+
+/* 產生煙火 */
+function createFireworks() {
+
+    fireworks.innerHTML = "";
+
+    for (let i = 0; i < 8; i++) {
+
+        const centerX = Math.random() * 100;
+        const centerY = Math.random() * 65 + 10;
+
+        for (let j = 0; j < 25; j++) {
+
+            const particle = document.createElement("div");
+
+            particle.className = "firework";
+
+            particle.style.left = centerX + "%";
+            particle.style.top = centerY + "%";
+
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 60 + Math.random() * 180;
+
+            particle.style.setProperty(
+                "--x",
+                Math.cos(angle) * distance + "px"
+            );
+
+            particle.style.setProperty(
+                "--y",
+                Math.sin(angle) * distance + "px"
+            );
+
+            particle.style.animationDelay =
+                Math.random() * 0.5 + "s";
+
+            fireworks.appendChild(particle);
+        }
+    }
+
+    setTimeout(() => {
+        fireworks.innerHTML = "";
+    }, 2500);
+}
+
+/* 開始抽獎 */
+function startLottery() {
+
+    if (isRunning || cells.length === 0) return;
+
+    let seconds = parseFloat(countdownInput.value);
+
+    if (isNaN(seconds) || seconds < 0.1) {
+        seconds = 5;
+        countdownInput.value = 5;
+    }
+
+    isRunning = true;
+
+    setupBtn.disabled = true;
+    startBtn.disabled = true;
+    cellCountInput.disabled = true;
+    countdownInput.disabled = true;
+
+    result.innerHTML = "";
+
+    cells.forEach(cell => {
+        cell.classList.remove("active", "winner");
+    });
+
+    let remaining = seconds;
+
+    countdownDisplay.textContent =
+        "倒數：" + remaining.toFixed(1) + " 秒";
+
+    timer = setInterval(() => {
+
+        /* 移除上一個高亮 */
+        if (currentIndex >= 0) {
+            cells[currentIndex].classList.remove("active");
+        }
+
+        /* 隨機選擇儲存格 */
+        currentIndex =
+            Math.floor(Math.random() * cells.length);
+
+        cells[currentIndex].classList.add("active");
+
+        /* 每0.1秒減少 */
+        remaining -= 0.1;
+
+        if (remaining < 0) {
+            remaining = 0;
+        }
+
+        countdownDisplay.textContent =
+            "倒數：" + remaining.toFixed(1) + " 秒";
+
+        /* 倒數結束 */
+        if (remaining <= 0) {
+
+            clearInterval(timer);
+
+            const winnerNumber =
+                currentIndex + 1;
+
+            cells[currentIndex].classList.remove("active");
+            cells[currentIndex].classList.add("winner");
+
+            countdownDisplay.textContent =
+                "🎉 抽獎完成！";
+
+            result.innerHTML = `
+                <div class="result-title">
+                    最終中獎號碼
+                </div>
+                <div class="winner-number">
+                    ${winnerNumber}
+                </div>
+            `;
+
+            createFireworks();
+
+            isRunning = false;
+
+            setupBtn.disabled = false;
+            startBtn.disabled = false;
+            cellCountInput.disabled = false;
+            countdownInput.disabled = false;
+        }
+
+    }, 100);
+}
+
+/* 事件 */
+setupBtn.addEventListener("click", setupLottery);
+startBtn.addEventListener("click", startLottery);
+
+/* 頁面載入時建立預設20格 */
+setupLottery();
+
+</script>
+
+</body>
+</html>

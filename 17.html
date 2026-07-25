@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-TW"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>抽獎系統</title>
+<style>
+body{margin:0;font-family:Arial;background:#07111f;color:#fff;text-align:center}
+h1{color:#6cf}h2{color:#9ff;font-size:1.1rem}
+.controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px}
+input,button{padding:8px;border-radius:8px}
+button{background:#0af;color:#fff;border:none}
+#grid{display:grid;grid-template-columns:repeat(10,minmax(45px,1fr));gap:8px;max-width:900px;margin:20px auto}
+.cell{background:#123;border:1px solid #3cf;padding:18px 0;border-radius:10px;box-shadow:0 0 8px #0ff3}
+.active{background:#ff0;color:#000;transform:scale(1.08)}
+#count,#winner{font-size:2rem;margin:10px}
+#winner{font-size:4rem;color:#ff0;text-shadow:0 0 20px gold;display:none}
+.confetti{position:fixed;top:-10px;width:8px;height:16px;animation:fall 3s linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+@media(max-width:600px){#grid{grid-template-columns:repeat(5,1fr)}}
+</style></head>
+<body>
+<h1>彰化社區大學-讓AI解決我的生活大小事成果展</h1>
+<h2>隨機抽獎系統-學員：李信賢老師教導/林筱雲設計</h2>
+<div class="controls">
+<label>抽獎儲存格數量<input id="n" type="number" value="20"></label>
+<label>倒數秒數<input id="sec" type="number" step="0.1" value="5"></label>
+<button onclick="setup()">設定</button>
+<button onclick="start()">開始抽獎</button>
+</div>
+<div id="count"></div><div id="winner"></div><div id="grid"></div>
+<script>
+let current=-1,timer;
+function setup(){
+grid.innerHTML="";winner.style.display="none";
+let n=+document.getElementById("n").value||20;
+for(let i=1;i<=n;i++){let d=document.createElement("div");d.className="cell";d.textContent=i;grid.appendChild(d);}
+}
+setup();
+function start(){
+clearInterval(timer);
+let cells=[...document.querySelectorAll(".cell")];
+let t=(+sec.value||5).toFixed(1);t=parseFloat(t);
+timer=setInterval(()=>{
+cells.forEach(c=>c.classList.remove("active"));
+current=Math.floor(Math.random()*cells.length);
+cells[current].classList.add("active");
+t=Math.max(0,Math.round((t-0.1)*10)/10);
+count.textContent="倒數："+t.toFixed(1)+" 秒";
+if(t<=0){
+clearInterval(timer);
+winner.textContent="🎉 "+cells[current].textContent;
+winner.style.display="block";
+count.textContent="最終中獎號碼";
+for(let i=0;i<120;i++){
+let c=document.createElement("div");
+c.className="confetti";
+c.style.left=Math.random()*100+"vw";
+c.style.background=`hsl(${Math.random()*360},100%,50%)`;
+c.style.animationDelay=(Math.random()*1)+"s";
+document.body.appendChild(c);
+setTimeout(()=>c.remove(),3500);
+}
+}
+},100);
+}
+</script></body></html>

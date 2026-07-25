@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>隨機抽獎系統</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    font-family:"Microsoft JhengHei",sans-serif;
+}
+
+body{
+    margin:0;
+    background:linear-gradient(135deg,#08121f,#132c4d,#07131f);
+    color:white;
+    text-align:center;
+}
+
+h1{
+    margin-top:20px;
+    color:#00ffff;
+    text-shadow:0 0 15px cyan;
+}
+
+h2{
+    color:#FFD700;
+    margin-top:-5px;
+}
+
+.panel{
+    margin:20px auto;
+}
+
+input{
+    width:90px;
+    padding:8px;
+    font-size:18px;
+    border-radius:8px;
+    border:none;
+    text-align:center;
+}
+
+button{
+    padding:10px 22px;
+    font-size:18px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    margin:8px;
+    color:white;
+    background:#0078ff;
+    transition:.3s;
+}
+
+button:hover{
+    background:#00aaff;
+    transform:scale(1.05);
+}
+
+#countdown{
+    font-size:42px;
+    color:#00ff99;
+    font-weight:bold;
+    margin:10px;
+    text-shadow:0 0 10px #00ff99;
+}
+
+table{
+    margin:auto;
+    border-collapse:separate;
+    border-spacing:10px;
+}
+
+td{
+    width:70px;
+    height:70px;
+    background:#173c60;
+    border:2px solid #00d9ff;
+    border-radius:12px;
+    font-size:24px;
+    font-weight:bold;
+    transition:.15s;
+    box-shadow:0 0 10px rgba(0,255,255,.3);
+}
+
+.active{
+    background:#00ffcc;
+    color:black;
+    transform:scale(1.15);
+    box-shadow:0 0 25px yellow;
+}
+
+#winner{
+    margin-top:25px;
+    font-size:58px;
+    color:gold;
+    font-weight:bold;
+    text-shadow:
+        0 0 10px yellow,
+        0 0 20px orange,
+        0 0 30px red;
+}
+
+.confetti{
+    position:fixed;
+    width:12px;
+    height:20px;
+    top:-20px;
+    animation:fall linear forwards;
+}
+
+@keyframes fall{
+    to{
+        transform:translateY(110vh) rotate(720deg);
+    }
+}
+
+@media(max-width:700px){
+
+td{
+    width:48px;
+    height:48px;
+    font-size:18px;
+}
+
+h1{
+    font-size:22px;
+}
+
+h2{
+    font-size:18px;
+}
+
+#winner{
+    font-size:38px;
+}
+
+button{
+    width:95%;
+}
+
+input{
+    width:80px;
+}
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>彰化社區大學-讓AI解決我的生活大小事成果展</h1>
+
+<h2>隨機抽獎系統-學員：陳秀蓉設計</h2>
+
+<div class="panel">
+
+抽獎儲存格數量
+
+<input id="cellCount" type="number" value="20" min="1">
+
+倒數秒數
+
+<input id="seconds" type="number" value="5" min="1" step="0.1">
+
+<br>
+
+<button onclick="createTable()">
+設定
+</button>
+
+<button onclick="startLottery()">
+開始抽獎
+</button>
+
+</div>
+
+<div id="countdown"></div>
+
+<table id="grid"></table>
+
+<div id="winner"></div>
+
+<script>
+
+let timer;
+let current=0;
+
+createTable();
+
+function createTable(){
+
+clearInterval(timer);
+
+document.getElementById("winner").innerHTML="";
+document.getElementById("countdown").innerHTML="";
+
+let n=parseInt(document.getElementById("cellCount").value);
+
+let table=document.getElementById("grid");
+
+table.innerHTML="";
+
+let row;
+
+for(let i=1;i<=n;i++){
+
+if((i-1)%10==0){
+
+row=table.insertRow();
+
+}
+
+let cell=row.insertCell();
+
+cell.innerHTML=i;
+
+}
+
+}
+
+function startLottery(){
+
+clearInterval(timer);
+
+let cells=document.querySelectorAll("td");
+
+if(cells.length==0)return;
+
+let total=parseFloat(document.getElementById("seconds").value);
+
+let remain=total;
+
+document.getElementById("winner").innerHTML="";
+
+timer=setInterval(()=>{
+
+cells.forEach(c=>c.classList.remove("active"));
+
+current=Math.floor(Math.random()*cells.length);
+
+cells[current].classList.add("active");
+
+remain-=0.1;
+
+if(remain<0)remain=0;
+
+document.getElementById("countdown").innerHTML=
+"倒數："+remain.toFixed(1)+" 秒";
+
+if(remain<=0){
+
+clearInterval(timer);
+
+document.getElementById("winner").innerHTML=
+"🎉 最終中獎號碼："+(current+1);
+
+launchConfetti();
+
+}
+
+},100);
+
+}
+
+function launchConfetti(){
+
+const colors=[
+"#ff0000",
+"#00ff00",
+"#ffff00",
+"#00ffff",
+"#ff00ff",
+"#ffffff",
+"#ff8800"
+];
+
+for(let i=0;i<180;i++){
+
+let c=document.createElement("div");
+
+c.className="confetti";
+
+c.style.left=Math.random()*100+"vw";
+
+c.style.background=colors[Math.floor(Math.random()*colors.length)];
+
+c.style.animationDuration=(2+Math.random()*3)+"s";
+
+c.style.transform="rotate("+Math.random()*360+"deg)";
+
+document.body.appendChild(c);
+
+setTimeout(()=>c.remove(),5000);
+
+}
+
+}
+
+</script>
+
+</body>
+</html>
